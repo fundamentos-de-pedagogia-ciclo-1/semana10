@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escuela Nueva — Pizarra</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Caveat:wght@500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    background: #5a3e28;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* ── MARCO DE MADERA ── */
+  .frame {
+    width: 100%;
+    max-width: 1060px;
+    background: linear-gradient(160deg, #7a5230 0%, #5c3d1e 40%, #7a5230 70%, #4e3318 100%);
+    border-radius: 10px;
+    padding: 22px 22px 28px;
+    box-shadow:
+      0 0 0 4px #3b2510,
+      0 0 0 7px #8a6235,
+      0 12px 50px rgba(0,0,0,0.7),
+      inset 0 2px 4px rgba(255,200,100,0.18);
+    position: relative;
+  }
+  /* Vetas de madera */
+  .frame::before {
+    content:'';
+    position:absolute; inset:0;
+    border-radius:10px;
+    background: repeating-linear-gradient(
+      92deg,
+      transparent 0px, transparent 18px,
+      rgba(0,0,0,0.06) 18px, rgba(0,0,0,0.06) 19px,
+      transparent 19px, transparent 38px,
+      rgba(255,255,255,0.04) 38px, rgba(255,255,255,0.04) 39px
+    );
+    pointer-events:none;
+  }
+  /* tornillos esquinas */
+  .screw {
+    position:absolute; width:14px; height:14px;
+    background: radial-gradient(circle at 40% 35%, #b08040, #5a3a10);
+    border-radius:50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .screw::after {
+    content:'';
+    position:absolute; top:50%; left:15%; right:15%;
+    height:2px; background:rgba(0,0,0,0.4);
+    transform:translateY(-50%);
+  }
+  .screw.tl { top:8px;  left:8px; }
+  .screw.tr { top:8px;  right:8px; }
+  .screw.bl { bottom:8px; left:8px; }
+  .screw.br { bottom:8px; right:8px; }
+
+  /* ── PIZARRA ── */
+  .board {
+    position:relative;
+    background: #2d5a3d;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(80,160,100,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, rgba(20,80,40,0.18) 0%, transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+    border-radius: 4px;
+    padding: 28px 28px 32px;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.35), inset 0 0 8px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  /* rayaduras de tiza vieja */
+  .board::before {
+    content:'';
+    position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(
+      175deg,
+      transparent 0px, transparent 60px,
+      rgba(255,255,255,0.018) 60px, rgba(255,255,255,0.018) 61px,
+      transparent 61px, transparent 130px,
+      rgba(255,255,255,0.012) 130px, rgba(255,255,255,0.012) 131px
+    );
+  }
+
+  /* ── TIZA DECORATIVA arriba ── */
+  .chalk-deco {
+    position:absolute; top:10px; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:0 18px; pointer-events:none;
+  }
+  .chalk-line {
+    flex:1; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    border-radius:2px;
+  }
+  .chalk-stars { font-size:1.1rem; opacity:0.35; letter-spacing:6px; }
+
+  /* ── TÍTULO EN TIZA ── */
+  .chalk-title {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+    text-align: center;
+    letter-spacing: 2px;
+    margin: 18px 0 6px;
+    text-shadow:
+      0 0 8px rgba(255,255,255,0.12),
+      1px 1px 0 rgba(0,0,0,0.2);
+    /* irregular como tiza */
+    filter: url(#chalk);
+    position:relative; z-index:2;
+  }
+  .chalk-sub {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+    color: rgba(255,255,230,0.6);
+    text-align: center;
+    margin-bottom: 24px;
+    position:relative; z-index:2;
+    letter-spacing: 1px;
+  }
+
+  /* SVG filter para efecto tiza */
+  .chalk-filter { position:absolute; width:0; height:0; }
+
+  /* ── REGLA HORIZONTAL tiza ── */
+  .chalk-rule {
+    width:100%; height:2px; margin-bottom:26px;
+    background: linear-gradient(90deg,
+      transparent 0%, rgba(255,255,255,0.25) 15%,
+      rgba(255,255,255,0.35) 50%,
+      rgba(255,255,255,0.25) 85%, transparent 100%);
+    border-radius:2px;
+    position:relative; z-index:2;
+  }
+
+  /* ── GRID DE PAPELES ── */
+  .papers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 28px 24px;
+    position:relative; z-index:2;
+  }
+
+  /* ── PAPEL / BOTÓN ── */
+  .paper {
+    position: relative;
+    background: #fffef5;
+    border: none;
+    border-radius: 3px;
+    padding: 18px 18px 14px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    box-shadow:
+      3px 5px 16px rgba(0,0,0,0.45),
+      0 1px 2px rgba(0,0,0,0.2);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    font-family: 'Nunito', sans-serif;
+    /* líneas de cuaderno */
+    background-image: repeating-linear-gradient(
+      transparent 0px, transparent 23px,
+      rgba(173,216,230,0.55) 23px, rgba(173,216,230,0.55) 24px
+    );
+    background-position: 0 32px;
+  }
+  /* Cinta adhesiva */
+  .paper::before {
+    content:'';
+    position:absolute;
+    top:-13px; left:50%; transform:translateX(-50%) rotate(-2deg);
+    width:52px; height:20px;
+    background: rgba(255,235,130,0.78);
+    border-radius:2px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+  }
+  /* Doblez esquina inferior derecha */
+  .paper::after {
+    content:'';
+    position:absolute; bottom:0; right:0;
+    width:18px; height:18px;
+    background: linear-gradient(225deg, #ddd 45%, #fffef5 45%);
+    border-radius:0 0 3px 0;
+  }
+
+  .paper:hover {
+    transform: translateY(-7px) scale(1.04) rotate(0deg) !important;
+    box-shadow: 6px 14px 32px rgba(0,0,0,0.55);
+    z-index: 10;
+  }
+  .paper:active { transform: scale(0.97) !important; }
+
+  /* Rotaciones individuales */
+  .p1 { transform: rotate(-2.2deg); }
+  .p2 { transform: rotate(1.5deg); }
+  .p3 { transform: rotate(-1deg); }
+  .p4 { transform: rotate(2.4deg); }
+
+  /* Colores de la "raya" izquierda */
+  .p1 { border-left: 5px solid #EF476F; }
+  .p2 { border-left: 5px solid #f5a623; }
+  .p3 { border-left: 5px solid #06D6A0; }
+  .p4 { border-left: 5px solid #118AB2; }
+
+  .paper-emoji { font-size:1.8rem; display:block; margin-bottom:6px; }
+  .paper-title {
+    font-family: 'Caveat', cursive;
+    font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+    font-weight: 700;
+    color: #222;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .paper-desc {
+    font-size: 0.88rem;
+    color: #555;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .paper-hint {
+    display:inline-block;
+    margin-top:10px;
+    font-size:0.78rem; font-weight:800;
+    color:white; padding:3px 12px;
+    border-radius:20px;
+  }
+
+  /* ── BANDERITAS decorativas ── */
+  .flags-row {
+    display:flex; justify-content:center; gap:0;
+    margin-bottom:18px; position:relative; z-index:2;
+  }
+  .flag {
+    width:28px; height:22px;
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+    flex-shrink:0;
+  }
+  .flag-string {
+    position:absolute; top:8px; left:50%;
+    transform:translateX(-50%);
+    width:70%; height:1px;
+    background:rgba(255,255,255,0.3);
+  }
+
+  /* ── BORRADOR ── */
+  .eraser-zone {
+    position:relative; z-index:2;
+    margin-top:24px;
+    display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  }
+  .chalk-residue {
+    font-family:'Caveat',cursive;
+    font-size:0.9rem; color:rgba(255,255,255,0.28);
+    letter-spacing:1px;
+  }
+
+  /* ── PORTAREGLAS abajo ── */
+  .ledge {
+    height:16px;
+    background: linear-gradient(180deg, #8a6235 0%, #5c3d1e 100%);
+    border-radius:0 0 3px 3px;
+    margin-top:0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    display:flex; align-items:center; justify-content:center; gap:14px;
+  }
+  .chalk-piece {
+    width:28px; height:8px; border-radius:3px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    opacity:0.85;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.65); z-index:1000;
+    align-items:center; justify-content:center;
+    padding:20px; backdrop-filter:blur(6px);
+  }
+  .modal-overlay.active { display:flex !important; }
+
+  .modal-paper {
+    background:#fffef5;
+    background-image: repeating-linear-gradient(
+      transparent 0px, transparent 27px,
+      rgba(173,216,230,0.5) 27px, rgba(173,216,230,0.5) 28px
+    );
+    background-position: 0 40px;
+    border-radius:4px;
+    max-width:620px; width:100%;
+    padding:44px 44px 38px;
+    position:relative;
+    animation:popIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 5px 8px 30px rgba(0,0,0,0.45);
+  }
+  /* cinta en modal */
+  .modal-paper::before {
+    content:'';
+    position:absolute;
+    top:-14px; left:50%; transform:translateX(-50%) rotate(-1.5deg);
+    width:80px; height:22px;
+    background:rgba(255,235,130,0.85);
+    border-radius:2px;
+    box-shadow:0 1px 5px rgba(0,0,0,0.2);
+  }
+  @keyframes popIn {
+    from { opacity:0; transform:scale(0.8) rotate(-3deg); }
+    to   { opacity:1; transform:scale(1) rotate(0deg); }
+  }
+  .modal-close {
+    position:absolute; top:12px; right:14px;
+    background:#f0f0e8; border:none; border-radius:50%;
+    width:34px; height:34px;
+    font-size:1.3rem; cursor:pointer; color:#888;
+    transition:transform 0.2s, background 0.2s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close:hover { transform:rotate(90deg); background:#FFD166; }
+  .modal-emoji { font-size:3.8rem; text-align:center; margin-bottom:8px; }
+  .modal-title {
+    font-family:'Caveat',cursive; font-size:2.4rem; font-weight:700;
+    text-align:center; margin-bottom:18px;
+  }
+  .modal-items { list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .modal-item {
+    display:flex; align-items:flex-start; gap:12px;
+    padding:12px 16px; border-radius:10px;
+    background:rgba(255,255,255,0.7);
+    font-size:1.15rem; font-weight:700; color:#333; line-height:1.4;
+    animation:slideIn 0.28s ease both;
+    border-left:4px solid transparent;
+  }
+  .modal-item:nth-child(1){animation-delay:.04s;}
+  .modal-item:nth-child(2){animation-delay:.09s;}
+  .modal-item:nth-child(3){animation-delay:.14s;}
+  .modal-item:nth-child(4){animation-delay:.19s;}
+  @keyframes slideIn {
+    from{transform:translateX(-14px);opacity:0;}
+    to{transform:translateX(0);opacity:1;}
+  }
+  .item-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+
+  /* ── INTEGRANTES BTN ── */
+  .integrantes-btn {
+    position:fixed; top:16px; left:16px; z-index:200;
+    font-family:'Fredoka One',cursive;
+    font-size:1rem;
+    padding:11px 20px; border-radius:20px; border:none;
+    cursor:pointer; color:white;
+    background:linear-gradient(135deg,#FF6B9D,#C77DFF);
+    box-shadow:0 5px 18px rgba(199,125,255,0.5);
+    transition:transform 0.2s;
+  }
+  .integrantes-btn:hover{transform:translateY(-3px) scale(1.04);}
+
+  /* INTEGRANTES MODAL */
+  .int-modal-paper {
+    background:#fffef5;
+    background-image: repeating-linear-gradient(
+      transparent 0px, transparent 27px,
+      rgba(173,216,230,0.5) 27px, rgba(173,216,230,0.5) 28px
+    );
+    background-position: 0 40px;
+    border-radius:4px;
+    max-width:440px; width:100%;
+    padding:44px 40px 38px;
+    position:relative; text-align:center;
+    animation:popIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow:5px 8px 30px rgba(0,0,0,0.45);
+  }
+  .int-modal-paper::before {
+    content:'';
+    position:absolute;
+    top:-14px; left:50%; transform:translateX(-50%) rotate(-1.5deg);
+    width:80px; height:22px;
+    background:rgba(255,235,130,0.85);
+    border-radius:2px;
+    box-shadow:0 1px 5px rgba(0,0,0,0.2);
+  }
+  .int-modal-paper h2 {
+    font-family:'Caveat',cursive; font-size:2.2rem; font-weight:700;
+    color:#C77DFF; margin-bottom:4px;
+  }
+  .sala-tag {
+    font-size:0.9rem; font-weight:800; color:#aaa;
+    text-transform:uppercase; letter-spacing:1.5px;
+    margin-bottom:24px; display:block;
+  }
+  .int-list{list-style:none;display:flex;flex-direction:column;gap:12px;}
+  .int-item {
+    display:flex; align-items:center; gap:14px;
+    background:rgba(250,245,255,0.9); border-radius:14px; padding:14px 18px;
+    animation:slideIn 0.3s ease both;
+  }
+  .int-item:nth-child(1){animation-delay:.05s;}
+  .int-item:nth-child(2){animation-delay:.12s;}
+  .int-avatar {
+    width:48px; height:48px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:0.95rem; color:#fff; flex-shrink:0;
+    font-family:'Fredoka One',cursive;
+  }
+  .int-name{font-weight:800;font-size:1.05rem;color:#333;text-align:left;}
+  .int-role{font-size:0.82rem;color:#aaa;font-weight:700;text-align:left;}
+
+  /* ANIMACIÓN entrada papeles */
+  .paper { animation: caidaPapel 0.5s ease-out both; }
+  .p1{animation-delay:.15s;} .p2{animation-delay:.25s;}
+  .p3{animation-delay:.35s;} .p4{animation-delay:.45s;}
+  @keyframes caidaPapel {
+    from{opacity:0;transform:translateY(-30px) rotate(var(--r,0deg));}
+    to{opacity:1;}
+  }
+  .p1{--r:-2.2deg;} .p2{--r:1.5deg;} .p3{--r:-1deg;} .p4{--r:2.4deg;}
+</style>
+</head>
+<body>
+
+<!-- Integrantes fijo -->
+<button class="integrantes-btn" onclick="openInt()">👥 Sala 4 — Integrantes</button>
+
+<svg class="chalk-filter">
+  <defs>
+    <filter id="chalk" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- MARCO MADERA -->
+<div class="frame">
+  <div class="screw tl"></div>
+  <div class="screw tr"></div>
+  <div class="screw bl"></div>
+  <div class="screw br"></div>
+
+  <!-- PIZARRA -->
+  <div class="board">
+
+    <!-- banderitas decorativas -->
+    <div class="flags-row">
+      <div class="flag-string"></div>
+      <div class="flag" style="background:#EF476F; transform:rotate(-4deg)"></div>
+      <div class="flag" style="background:#FFD166; transform:rotate(3deg)"></div>
+      <div class="flag" style="background:#06D6A0; transform:rotate(-2deg)"></div>
+      <div class="flag" style="background:#118AB2; transform:rotate(4deg)"></div>
+      <div class="flag" style="background:#EF476F; transform:rotate(-3deg)"></div>
+      <div class="flag" style="background:#FFD166; transform:rotate(2deg)"></div>
+      <div class="flag" style="background:#06D6A0; transform:rotate(-4deg)"></div>
+      <div class="flag" style="background:#118AB2; transform:rotate(3deg)"></div>
+      <div class="flag" style="background:#EF476F; transform:rotate(-2deg)"></div>
+      <div class="flag" style="background:#FFD166; transform:rotate(4deg)"></div>
+      <div class="flag" style="background:#06D6A0; transform:rotate(-3deg)"></div>
+    </div>
+
+    <!-- Título en tiza -->
+    <div class="chalk-title">✏️ ESCUELA NUEVA ✏️</div>
+    <div class="chalk-sub">— Una educación para la vida —</div>
+
+    <div class="chalk-rule"></div>
+
+    <!-- PAPELES -->
+    <div class="papers-grid">
+
+      <button class="paper p1" onclick="openModal('pasado')">
+        <span class="paper-emoji">🏛️</span>
+        <div class="paper-title">La Escuela del Pasado</div>
+        <div class="paper-desc">El maestro manda, el alumno obedece...</div>
+        <span class="paper-hint" style="background:#EF476F">👆 toca aquí</span>
+      </button>
+
+      <button class="paper p2" onclick="openModal('cambio')">
+        <span class="paper-emoji">💡</span>
+        <div class="paper-title">El Cambio</div>
+        <div class="paper-desc">"Aprender haciendo" — Dewey...</div>
+        <span class="paper-hint" style="background:#d4960a">👆 toca aquí</span>
+      </button>
+
+      <button class="paper p3" onclick="openModal('accion')">
+        <span class="paper-emoji">🌍</span>
+        <div class="paper-title">En Acción</div>
+        <div class="paper-desc">Cada alumno trae su cultura...</div>
+        <span class="paper-hint" style="background:#05b386">👆 toca aquí</span>
+      </button>
+
+      <button class="paper p4" onclick="openModal('querer')">
+        <span class="paper-emoji">⭐</span>
+        <div class="paper-title">La Escuela que Queremos</div>
+        <div class="paper-desc">No solo para aprobar, sino para vivir...</div>
+        <span class="paper-hint" style="background:#118AB2">👆 toca aquí</span>
+      </button>
+
+    </div>
+
+    <!-- residuo de borrador -->
+    <div class="eraser-zone">
+      <span class="chalk-residue">~ ~ ~ ~ ~ ~ ~ ~ ~ ~</span>
+    </div>
+
+  </div><!-- /board -->
+
+  <!-- portareglas -->
+  <div class="ledge">
+    <div class="chalk-piece" style="background:#f0ece0"></div>
+    <div class="chalk-piece" style="background:#f5e6e0; width:18px"></div>
+    <div class="chalk-piece" style="background:#e0f0e8; width:22px"></div>
+    <div class="chalk-piece" style="background:#f0ece0"></div>
+  </div>
+
+</div><!-- /frame -->
+
+
+<!-- ══ MODALES ══ -->
+
+<!-- PASADO -->
+<div class="modal-overlay" id="modal-pasado" onclick="if(event.target===this)closeModal('pasado')">
+  <div class="modal-paper" style="border-left:5px solid #EF476F">
+    <button class="modal-close" onclick="closeModal('pasado')">✕</button>
+    <div class="modal-emoji">🏛️</div>
+    <div class="modal-title" style="color:#EF476F">La Escuela del Pasado</div>
+    <ul class="modal-items">
+      <li class="modal-item" style="border-color:#EF476F"><span class="item-dot" style="background:#EF476F"></span>El maestro enseña, el alumno obedece.</li>
+      <li class="modal-item" style="border-color:#EF476F"><span class="item-dot" style="background:#EF476F"></span>El conocimiento se memoriza, no se comprende.</li>
+      <li class="modal-item" style="border-color:#EF476F"><span class="item-dot" style="background:#EF476F"></span>Las diferencias no existen, todos aprenden igual.</li>
+      <li class="modal-item" style="border-color:#EF476F"><span class="item-dot" style="background:#EF476F"></span>Solo importa la nota.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- CAMBIO -->
+<div class="modal-overlay" id="modal-cambio" onclick="if(event.target===this)closeModal('cambio')">
+  <div class="modal-paper" style="border-left:5px solid #f5a623">
+    <button class="modal-close" onclick="closeModal('cambio')">✕</button>
+    <div class="modal-emoji">💡</div>
+    <div class="modal-title" style="color:#d4960a">El Cambio</div>
+    <ul class="modal-items">
+      <li class="modal-item" style="border-color:#f5a623"><span class="item-dot" style="background:#f5a623"></span>"Aprender haciendo" — Dewey</li>
+      <li class="modal-item" style="border-color:#f5a623"><span class="item-dot" style="background:#f5a623"></span>"El niño primero" — Claparède</li>
+      <li class="modal-item" style="border-color:#f5a623"><span class="item-dot" style="background:#f5a623"></span>"La escuela es una comunidad" — Dewey</li>
+      <li class="modal-item" style="border-color:#f5a623"><span class="item-dot" style="background:#f5a623"></span>"El juego también es aprender" — Claparède</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ACCIÓN -->
+<div class="modal-overlay" id="modal-accion" onclick="if(event.target===this)closeModal('accion')">
+  <div class="modal-paper" style="border-left:5px solid #06D6A0">
+    <button class="modal-close" onclick="closeModal('accion')">✕</button>
+    <div class="modal-emoji">🌍</div>
+    <div class="modal-title" style="color:#05b386">En Acción</div>
+    <ul class="modal-items">
+      <li class="modal-item" style="border-color:#06D6A0"><span class="item-dot" style="background:#06D6A0"></span>Cada estudiante representa una cultura.</li>
+      <li class="modal-item" style="border-color:#06D6A0"><span class="item-dot" style="background:#06D6A0"></span>Comida, juegos, idiomas, costumbres.</li>
+      <li class="modal-item" style="border-color:#06D6A0"><span class="item-dot" style="background:#06D6A0"></span>Geografía, economía y arte en un solo espacio.</li>
+      <li class="modal-item" style="border-color:#06D6A0"><span class="item-dot" style="background:#06D6A0"></span>Aprender juntos, aprender viviendo.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- QUERER -->
+<div class="modal-overlay" id="modal-querer" onclick="if(event.target===this)closeModal('querer')">
+  <div class="modal-paper" style="border-left:5px solid #118AB2">
+    <button class="modal-close" onclick="closeModal('querer')">✕</button>
+    <div class="modal-emoji">⭐</div>
+    <div class="modal-title" style="color:#118AB2">La Escuela que Queremos</div>
+    <ul class="modal-items">
+      <li class="modal-item" style="border-color:#118AB2"><span class="item-dot" style="background:#118AB2"></span>Proyectos que parten de nuestra realidad.</li>
+      <li class="modal-item" style="border-color:#118AB2"><span class="item-dot" style="background:#118AB2"></span>La diversidad peruana como recurso.</li>
+      <li class="modal-item" style="border-color:#118AB2"><span class="item-dot" style="background:#118AB2"></span>Ciudadanos críticos, no solo estudiantes.</li>
+      <li class="modal-item" style="border-color:#118AB2"><span class="item-dot" style="background:#118AB2"></span>"No solo para aprobar, sino para vivir"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- INTEGRANTES -->
+<div class="modal-overlay" id="modal-int" onclick="if(event.target===this)closeInt()">
+  <div class="int-modal-paper">
+    <button class="modal-close" onclick="closeInt()">✕</button>
+    <h2>👥 Sala 4</h2>
+    <span class="sala-tag">Integrantes del equipo</span>
+    <ul class="int-list">
+      <li class="int-item">
+        <div class="int-avatar" style="background:linear-gradient(135deg,#FFD93D,#FF6B35)">FN</div>
+        <div>
+          <div class="int-name">Freddy Hernan Nogueira Zambrano</div>
+          <div class="int-role">Expositor</div>
+        </div>
+      </li>
+      <li class="int-item">
+        <div class="int-avatar" style="background:linear-gradient(135deg,#FFD93D,#FF6B35)">FN</div>
+        <div>
+          <div class="int-name">Freddy Hernan Nogueira Zambrano</div>
+          <div class="int-role">Expositor</div>
+        </div>
+      </li>
+      <li class="int-item">
+        <div class="int-avatar" style="background:linear-gradient(135deg,#FFD93D,#FF6B35)">FN</div>
+        <div>
+          <div class="int-name">Freddy Hernan Nogueira Zambrano</div>
+          <div class="int-role">Expositor</div>
+        </div>
+      </li>
+      <li class="int-item">
+        <div class="int-avatar" style="background:linear-gradient(135deg,#FFD93D,#FF6B35)">FN</div>
+        <div>
+          <div class="int-name">Freddy Hernan Nogueira Zambrano</div>
+          <div class="int-role">Expositor</div>
+        </div>
+      </li>
+      <li class="int-item">
+        <div class="int-avatar" style="background:linear-gradient(135deg,#C77DFF,#7B2FBE)">JQ</div>
+        <div>
+          <div class="int-name">Jhon Franklin Quintana Suárez</div>
+          <div class="int-role">Expositor</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function openModal(id) {
+    document.getElementById('modal-' + id).classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById('modal-' + id).classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  function openInt() {
+    document.getElementById('modal-int').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeInt() {
+    document.getElementById('modal-int').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      document.body.style.overflow = '';
+    }
+  });
+</script>
+</body>
+</html>
