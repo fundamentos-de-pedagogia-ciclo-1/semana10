@@ -1143,6 +1143,13 @@ function closePrac() {
 .adm-input{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:white;padding:7px 12px;font-family:'Caveat',cursive;font-size:1rem;box-sizing:border-box;}
 .adm-input:focus{outline:none;border-color:#06D6A0;}
 .adm-role-select{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:white;padding:6px 10px;font-family:'Caveat',cursive;font-size:0.9rem;cursor:pointer;}
+.adm-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:500px){
+  .adm-grid-2{grid-template-columns:1fr;}
+  #adminPanel > div { margin:10px !important; padding:18px 14px !important; border-radius:14px !important; }
+  .adm-section { padding:14px 12px; }
+  .adm-role-select { width:100%; margin-top:4px; }
+}
 </style>
 <div id="adminPanel" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);overflow-y:auto;-webkit-overflow-scrolling:touch;">
   <div style="max-width:680px;margin:20px auto 40px;background:#1e1e2e;border-radius:20px;padding:24px 20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.1);">
@@ -1162,8 +1169,7 @@ function closePrac() {
     <!-- TÍTULOS PAPELITOS -->
     <div class="adm-section">
       <div style="font-family:'Fredoka One',cursive;color:#FFD93D;font-size:1.05rem;margin-bottom:12px;">🏷️ Títulos de los papelitos</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div><label class="adm-label">🏛️ PAPELITO 1</label><input id="adm-t1" class="adm-input" value="La Escuela del Pasado"></div>
+      <div class="adm-grid-2"><input id="adm-t1" class="adm-input" value="La Escuela del Pasado"></div>
         <div><label class="adm-label">💡 PAPELITO 2</label><input id="adm-t2" class="adm-input" value="La Escuela Nueva"></div>
         <div><label class="adm-label">🌍 PAPELITO 3</label><input id="adm-t3" class="adm-input" value="En Acción"></div>
         <div><label class="adm-label">⭐ PAPELITO 4</label><input id="adm-t4" class="adm-input" value="La Escuela que Queremos"></div>
@@ -1173,7 +1179,7 @@ function closePrac() {
     <!-- TAMAÑOS DE LETRA -->
     <div class="adm-section">
       <div style="font-family:'Fredoka One',cursive;color:#C77DFF;font-size:1.05rem;margin-bottom:12px;">🔡 Tamaño de letra</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="adm-grid-2">
         <div>
           <label class="adm-label">Título pizarra</label>
           <input id="adm-fs-titulo" type="range" min="1.5" max="6" step="0.1" value="4"
@@ -1603,7 +1609,7 @@ document.addEventListener('keydown', function(e) {
       panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
       btn.style.background = 'rgba(0,0,0,0.18)';
       btn.style.color = 'rgba(255,255,255,0.25)';
-    }, 1500);
+    }, 3000);
   }
   function endHold() {
     clearTimeout(holdTimer);
