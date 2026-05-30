@@ -1661,10 +1661,18 @@ document.addEventListener('keydown', function(e) {
   }
 
   // capture:true para recibir el evento ANTES que cualquier stopPropagation
-  document.addEventListener('touchstart',  onScreenStart, { passive: true, capture: true });
-  document.addEventListener('touchmove',   onScreenMove,  { passive: true, capture: true });
-  document.addEventListener('touchend',    cancelScreen,  { passive: true, capture: true });
-  document.addEventListener('touchcancel', cancelScreen,  { passive: true, capture: true });
+  function onScreenEndCapture(e) {
+    // Si el toque termina sobre el botón o el panel, no cancelar el timer del botón
+    if (e.target === btn || btn.contains(e.target)) return;
+    var panel = document.getElementById('adminPanel');
+    if (panel && panel.contains(e.target)) return;
+    cancelScreen();
+  }
+
+  document.addEventListener('touchstart',  onScreenStart,      { passive: true, capture: true });
+  document.addEventListener('touchmove',   onScreenMove,       { passive: true, capture: true });
+  document.addEventListener('touchend',    onScreenEndCapture, { passive: true, capture: true });
+  document.addEventListener('touchcancel', onScreenEndCapture, { passive: true, capture: true });
 
   // ── 2. Presión larga en el BOTÓN ──
   var btnTimer = null;
@@ -1683,6 +1691,7 @@ document.addEventListener('keydown', function(e) {
     }, 1000);
 
     btnTimer = setTimeout(function() {
+      btnTimer = null; // marcar como disparado para que onBtnEnd no cancele
       clearInterval(btnTick);
       btn.textContent = '⚙️ Panel';
       var panel = document.getElementById('adminPanel');
@@ -1697,8 +1706,12 @@ document.addEventListener('keydown', function(e) {
 
   function onBtnEnd(e) {
     e.stopPropagation();
-    clearTimeout(btnTimer); clearInterval(btnTick);
-    btn.textContent = '⚙️ Panel';
+    // Solo cancelar si el timer AÚN no disparó (btnTimer sigue activo)
+    if (btnTimer !== null) {
+      clearTimeout(btnTimer); clearInterval(btnTick);
+      btnTimer = null;
+      btn.textContent = '⚙️ Panel';
+    }
   }
 
   btn.addEventListener('touchstart',  onBtnStart, { passive: false });
