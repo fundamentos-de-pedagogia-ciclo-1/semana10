@@ -260,28 +260,30 @@
   @media (max-width: 640px) {
     body { padding: 12px 10px 40px; }
 
-    /* Papelitos: siguen fixed pero reposicionados para móvil */
+    /* Papelitos: absolute dentro del .frame para que NO tapen el título ni hagan scroll */
     .int-paper-btn {
-      position: fixed !important;
-      top: 10px !important; left: 8px !important;
-      min-width: 110px; max-width: 140px;
+      position: absolute !important;
+      top: 30px !important; left: 8px !important;
+      min-width: 100px; max-width: 130px;
       padding: 10px 10px 8px;
       transform: rotate(-2deg) !important;
+      z-index: 200;
     }
     .prac-paper-btn {
-      position: fixed !important;
-      top: 10px !important; right: 8px !important; left: auto !important;
-      min-width: 110px; max-width: 140px;
+      position: absolute !important;
+      top: 30px !important; right: 8px !important; left: auto !important;
+      min-width: 100px; max-width: 130px;
       padding: 10px 10px 8px;
       transform: rotate(2deg) !important;
+      z-index: 200;
     }
     .int-paper-btn:hover  { transform: rotate(0deg) scale(1.04) !important; }
     .prac-paper-btn:hover { transform: rotate(0deg) scale(1.04) !important; }
     .ibtn-title { font-size: 0.95rem; }
     .ibtn-sub   { font-size: 0.68rem; }
 
-    .frame { padding: 14px 14px 0; border-radius: 8px; }
-    .board { padding: 18px 14px 20px; min-height: auto; }
+    .frame { padding: 14px 14px 0; border-radius: 8px; position: relative; overflow: visible; }
+    .board { padding: 110px 14px 20px; min-height: auto; }
 
     .chalk-title .typed-text,
     .typed-text { font-size: clamp(1.4rem, 7vw, 2.2rem) !important; letter-spacing: 1px; }
@@ -892,22 +894,6 @@
   </defs>
 </svg>
 
-<!-- PAPELITOS FLOTANTES -->
-<div class="paper-btns-row">
-<button class="int-paper-btn visible" id="intBtn" onclick="openInt(); event.stopPropagation();">
-  <span class="ibtn-emoji">📋</span>
-  <div class="ibtn-title">Grupo 3<br>Integrantes</div>
-  <span class="ibtn-sub">👆 toca aquí</span>
-</button>
-
-<!-- PAPELITO PRÁCTICA — visible desde el inicio -->
-<button class="prac-paper-btn visible" id="pracBtn" onclick="openPrac(); event.stopPropagation();">
-  <span class="ibtn-emoji">📝</span>
-  <div class="ibtn-title">Preguntas<br>de Práctica</div>
-  <span class="ibtn-sub">👆 toca aquí</span>
-</button>
-</div>
-
 <!-- STEP DOTS -->
 <div class="step-dots">
   <div class="dot active" id="dot0"></div>
@@ -924,6 +910,18 @@
 <div class="frame" id="mainFrame" onclick="handleFrameClick(event)">
   <div class="screw tl"></div><div class="screw tr"></div>
   <div class="screw bl"></div><div class="screw br"></div>
+
+  <!-- PAPELITOS FLOTANTES (dentro del frame para posicionarse bien en móvil) -->
+  <button class="int-paper-btn visible" id="intBtn" onclick="openInt(); event.stopPropagation();">
+    <span class="ibtn-emoji">📋</span>
+    <div class="ibtn-title">Grupo 3<br>Integrantes</div>
+    <span class="ibtn-sub">👆 toca aquí</span>
+  </button>
+  <button class="prac-paper-btn visible" id="pracBtn" onclick="openPrac(); event.stopPropagation();">
+    <span class="ibtn-emoji">📝</span>
+    <div class="ibtn-title">Preguntas<br>de Práctica</div>
+    <span class="ibtn-sub">👆 toca aquí</span>
+  </button>
 
   <div class="board" id="board">
     <div class="chalk-smudge smudge1"></div>
@@ -1598,58 +1596,90 @@ document.addEventListener('keydown', function(e) {
 }, true);
 
 // ── BOTÓN ADMIN MÓVIL ──
-// Lógica: presionar PANTALLA 3s → muestra/oculta botón | presionar BOTÓN 3s → abre/cierra panel
+// Paso 1: presionar pantalla 3s (sin mover) → aparece/desaparece el botón ⚙️
+// Paso 2: presionar el botón 3s             → abre/cierra el panel admin
 (function() {
   var btn = document.getElementById('adminMobileBtn');
   if (!btn) return;
-  // El botón arranca siempre oculto
   btn.style.display = 'none';
 
-  // ── 1. Presión larga en la PANTALLA → mostrar/ocultar el botón ──
+  // ── Indicador visual de cuenta regresiva ──
+  var indicator = document.createElement('div');
+  indicator.id = 'adminIndicator';
+  indicator.style.cssText = [
+    'position:fixed','bottom:70px','left:18px','z-index:8001',
+    'background:rgba(6,214,160,0.9)','color:#000','font-family:Fredoka One,cursive',
+    'font-size:1.4rem','font-weight:700','width:44px','height:44px',
+    'border-radius:50%','display:none','align-items:center','justify-content:center',
+    'box-shadow:0 0 0 3px rgba(6,214,160,0.3)','pointer-events:none'
+  ].join(';');
+  document.body.appendChild(indicator);
+
+  // ── 1. Presión larga en la PANTALLA ──
   var screenTimer = null;
   var screenTick  = null;
-  var screenSecs  = 0;
+  var screenN     = 3;
+  var startX, startY;
+  var MOVE_THRESHOLD = 12; // px — si se mueve más, cancela
 
   function onScreenStart(e) {
-    // No activar si el toque es sobre el botón o el panel
-    if (e.target === btn || btn.contains(e.target)) return;
     var panel = document.getElementById('adminPanel');
-    if (panel && (e.target === panel || panel.contains(e.target))) return;
+    if (e.target === btn || btn.contains(e.target)) return;
+    if (panel && panel.contains(e.target)) return;
 
-    screenSecs = 3;
-    screenTimer = setTimeout(function() {
-      clearInterval(screenTick);
-      btn.style.display = btn.style.display === 'none' ? 'inline-block' : 'none';
-    }, 3000);
+    var touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX; startY = touch.clientY;
+    screenN = 3;
+
+    indicator.textContent = screenN;
+    indicator.style.display = 'flex';
 
     screenTick = setInterval(function() {
-      screenSecs--;
+      screenN--;
+      indicator.textContent = screenN > 0 ? screenN : '…';
     }, 1000);
+
+    screenTimer = setTimeout(function() {
+      clearInterval(screenTick);
+      indicator.style.display = 'none';
+      btn.style.display = (btn.style.display === 'none' || btn.style.display === '') ? 'inline-block' : 'none';
+    }, 3000);
   }
 
-  function onScreenEnd() {
-    clearTimeout(screenTimer);
-    clearInterval(screenTick);
+  function onScreenMove(e) {
+    if (screenTimer === null) return;
+    var touch = e.touches ? e.touches[0] : e;
+    var dx = touch.clientX - startX;
+    var dy = touch.clientY - startY;
+    if (Math.sqrt(dx*dx + dy*dy) > MOVE_THRESHOLD) cancelScreen();
   }
 
-  document.addEventListener('touchstart', onScreenStart, { passive: true });
-  document.addEventListener('touchend',   onScreenEnd,   { passive: true });
-  document.addEventListener('touchcancel',onScreenEnd,   { passive: true });
+  function cancelScreen() {
+    clearTimeout(screenTimer); clearInterval(screenTick);
+    screenTimer = null;
+    indicator.style.display = 'none';
+  }
 
-  // ── 2. Presión larga en el BOTÓN → abrir/cerrar panel ──
+  // capture:true para recibir el evento ANTES que cualquier stopPropagation
+  document.addEventListener('touchstart',  onScreenStart, { passive: true, capture: true });
+  document.addEventListener('touchmove',   onScreenMove,  { passive: true, capture: true });
+  document.addEventListener('touchend',    cancelScreen,  { passive: true, capture: true });
+  document.addEventListener('touchcancel', cancelScreen,  { passive: true, capture: true });
+
+  // ── 2. Presión larga en el BOTÓN ──
   var btnTimer = null;
   var btnTick  = null;
-  var btnSecs  = 0;
+  var btnN     = 3;
 
   function onBtnStart(e) {
     e.preventDefault();
     e.stopPropagation();
-    btnSecs = 3;
-    btn.textContent = '⚙️ 3…';
+    btnN = 3;
+    btn.textContent = '⚙️ ' + btnN + '…';
 
     btnTick = setInterval(function() {
-      btnSecs--;
-      btn.textContent = btnSecs > 0 ? ('⚙️ ' + btnSecs + '…') : '⚙️ …';
+      btnN--;
+      btn.textContent = btnN > 0 ? ('⚙️ ' + btnN + '…') : '⚙️ …';
     }, 1000);
 
     btnTimer = setTimeout(function() {
@@ -1667,17 +1697,16 @@ document.addEventListener('keydown', function(e) {
 
   function onBtnEnd(e) {
     e.stopPropagation();
-    clearTimeout(btnTimer);
-    clearInterval(btnTick);
+    clearTimeout(btnTimer); clearInterval(btnTick);
     btn.textContent = '⚙️ Panel';
   }
 
-  btn.addEventListener('touchstart', onBtnStart, { passive: false });
-  btn.addEventListener('touchend',   onBtnEnd,   { passive: false });
-  btn.addEventListener('touchcancel',onBtnEnd,   { passive: false });
-  btn.addEventListener('mousedown',  onBtnStart);
-  btn.addEventListener('mouseup',    onBtnEnd);
-  btn.addEventListener('mouseleave', onBtnEnd);
+  btn.addEventListener('touchstart',  onBtnStart, { passive: false });
+  btn.addEventListener('touchend',    onBtnEnd,   { passive: false });
+  btn.addEventListener('touchcancel', onBtnEnd,   { passive: false });
+  btn.addEventListener('mousedown',   onBtnStart);
+  btn.addEventListener('mouseup',     onBtnEnd);
+  btn.addEventListener('mouseleave',  onBtnEnd);
 })();
 
 // Aplicar al cargar la página
